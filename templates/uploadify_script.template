@@ -1,0 +1,29 @@
+$(document).ready(function() { 
+    $("#fileInput1").uploadify({ 
+        'uploader' : 'uploadify.swf', 
+        'cancelImg' : 'cancel.png', 
+        'multi' : false, 
+        'scriptData': $scriptData,  
+        'script': '$action', 
+        'fileDataName' : 'file', 
+        'onError' : function(event, queueID, fileObj, errorObj) { 
+                if(errorObj.type == 'HTTP' 
+                    && errorObj.info == 201) { 
+                    console.log('all ok: HTTP 201'); 
+                } else if(errorObj.type == 'IO' 
+                    && errorObj.info == 'Error #2038') { 
+                    console.log('IO 2038'); 
+                } else {  
+                    alert("Error: " + errorObj.type +  
+                        "  Msg: " + errorObj.info)} 
+                ; 
+            }, 
+        'onComplete' : function(event, queueID, fileObj, 
+                    response, data){ 
+                console.log('Complete!');
+                window.location.href="http://www.google.com";
+                return false;
+            }, 
+        }); 
+});
+
