@@ -1,0 +1,26 @@
+This is a "simple" example of how to use Uploadify to perform POST uploads directly Amazon S3.  The code uses only Python standard library code, except for the boto library (Python AWS library).
+
+1.)  Install
+  Verify the python "virtualenv" application is installed.
+    (For Debian/Ubuntu "sudo aptitude install python-virtualenv")
+  Run the "create_env.sh" script (e.g., "./create_env.sh")
+
+2.)  Activate the virtual environment (this is only necessary for development)
+  ". env/bin/activate"
+
+3.)  Create a configuration file with the S3 credentials
+    "cp server.ini.template server.ini"
+    edit the server.ini and insert your AWS access and secret keys
+    
+    Edit the server.py to modify the BUCKET_NAME appropriately
+
+4.)  Start the server
+    "./start.sh"
+
+
+NOTE:  Flash requires a crossdomain.xml file to reside in the bucket
+       see http://docs.amazonwebservices.com/AmazonS3/2006-03-01/dev/HTTPPOSTFlash.html
+
+There does not appear to be a mechanism, currently, to use the S3 POST "success-action_redirect" feature with Uploadify.  It interprets a 303 as an error, and the onError callback does not have access to the actual response to extract the Location URI.
+
+  
