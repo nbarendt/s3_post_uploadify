@@ -1,13 +1,12 @@
 #! /usr/bin/env python
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
-from boto import connect_s3
 from uuid import uuid4
-from ConfigParser import SafeConfigParser
 from base64 import b64decode
 from urlparse import urlparse, parse_qs, urlunparse
 from urllib import urlencode
 import os
 from string import Template
+import s3_post
 
 FORM_TEMPLATE = Template(open('templates/root.template', 'rb').read())
 UPLOAD_COMPLETE_TEMPLATE = Template(open('templates/upload_complete.template',
@@ -16,31 +15,10 @@ UPLOADIFY_SCRIPT_TEMPLATE = Template(open('templates/uploadify_script.template',
     'rb').read())
 BUCKET_NAME = 'edacloud_media_test'
 
-def get_s3_connection():
-    # read the AWS S3 Credentials in from the ini file
-    config = SafeConfigParser()
-    config.read('server.ini')
-    # create an S3 Boto connection
-    return connect_s3(config.get('s3', 'access'), config.get('s3', 'secret'))
-
-def get_post_args(key):
-        return get_s3_connection().build_post_form_args(
-            bucket_name=BUCKET_NAME,
-            key=key,
-            expires_in=6000,
-            #success_action_redirect='http://{0}:{1}/upload_complete'.format(
-            #    self.server.server_name, self.server.server_port),
-            fields=[{'name': 'success_action_status',
-                     'value': 201}],
-            conditions=["['starts-with', '$Filename', '']",
-                        "['starts-with', '$folder', '']",
-                        "{'success_action_status' : '201'}",]
-            )
-
 class MyHandler(BaseHTTPRequestHandler):
     def generate_upload_form(self):
         key = uuid4().hex
-        s3_post_args = get_post_args(key)  
+        s3_post_args = s3_post.get_post_args(BUCKET_NAME, key)  
     
         # assemble the scriptData string for uploadify's use
         scriptData = '{\n'
