@@ -1,10 +1,14 @@
 from boto import connect_s3
 from ConfigParser import SafeConfigParser
+import os
+
+CONFIG_FILE='server.ini'
 
 def get_s3_connection():
     # read the AWS S3 Credentials in from the ini file
     config = SafeConfigParser()
-    config.read('server.ini')
+    assert os.path.exists(CONFIG_FILE), 'Required file %s not found!' % CONFIG_FILE
+    config.read(CONFIG_FILE)
     # create an S3 Boto connection
     return connect_s3(config.get('s3', 'access'), config.get('s3', 'secret'))
 

@@ -7,12 +7,14 @@ from urllib import urlencode
 import os
 from string import Template
 import s3_post
+import mimetypes
 
 FORM_TEMPLATE = Template(open('templates/root.template', 'rb').read())
 UPLOAD_COMPLETE_TEMPLATE = Template(open('templates/upload_complete.template',
     'rb').read())
 UPLOADIFY_SCRIPT_TEMPLATE = Template(open('templates/uploadify_script.template',
     'rb').read())
+
 BUCKET_NAME = 'edacloud_media_test'
 
 class MyHandler(BaseHTTPRequestHandler):
@@ -20,25 +22,38 @@ class MyHandler(BaseHTTPRequestHandler):
         key = uuid4().hex
         s3_post_args = s3_post.get_post_args(BUCKET_NAME, key)  
     
-        # assemble the scriptData string for uploadify's use
-        scriptData = '{\n'
+        # assemble the scriptData dictionary string for uploadify's use
+        scriptData = ['{']
         for field in s3_post_args['fields']:
-            scriptData += "'{0}': '{1}',\n".format(field['name'],
-                field['value'])
+            # apparently there's some extra uri decoding going on with
+            #   uploadify/flash/javascript
+            #   so, to protect the values, we need to doubly encode them
+            #   sigh;
+            #   see for example:
+            #     http://www.uploadify.com/forum/viewtopic.php?f=7&t=1416
+            encoding_string = "encodeURIComponent(encodeURIComponent('{0}'))" 
+            encoded_value = encoding_string.format(field['value'])
+            keyValue = "'{0}' : {1},".format(field['name'], encoded_value) 
+            scriptData.append(keyValue)
             if field['name'] == 'policy':
                 # save the policy value for debug
                 policy = field['value']
-        scriptData += '}\n'
+            if field['name'] == 'signature':
+                # save the signature value for debug
+                signature = field['value']
+        scriptData.append('}')
 
         success_action_redirect=urlunparse((
                 'http',
                 '{0}:{1}'.format(
                     self.server.server_name, self.server.server_port),
                 'upload_complete',
+                '',
                 urlencode(dict(bucket=BUCKET_NAME, key=key, etag='')),
-                '',''))
+                ''))
+        # generate the javascript for uploadify
         uploadify_script = UPLOADIFY_SCRIPT_TEMPLATE.safe_substitute(dict( 
-            scriptData=scriptData, action=s3_post_args['action'],
+            scriptData='\n'.join(scriptData), action=s3_post_args['action'],
             success_action_redirect=success_action_redirect))
 
         # assemble the dictionary for template interpolation
@@ -49,8 +64,8 @@ class MyHandler(BaseHTTPRequestHandler):
             'key' : key,
             'policy' : b64decode(policy), # for debug
             'script' : uploadify_script, 
+            'signature' : signature,
         }
-            
         self.wfile.write(FORM_TEMPLATE.safe_substitute(d))
         return
 
@@ -77,10 +92,10 @@ class MyHandler(BaseHTTPRequestHandler):
     def do_GET_file(self):
         # assume it's a file
         filename = os.path.join('www', self.path[1:])
-        print("filename: %s" % filename)
         if os.path.exists(filename):
             self.send_response(200)
             self.send_header('Cache-Control', 'no-cache')
+            self.send_header('Content-Type', mimetypes.guess_type(filename)[0])
             self.end_headers()
             self.wfile.write(open(filename, 'rb').read())
         else:
