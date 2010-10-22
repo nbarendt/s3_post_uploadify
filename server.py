@@ -39,6 +39,14 @@ class MyHandler(BaseHTTPRequestHandler):
         key = uuid4().hex
         s3_post_args = s3_post.get_post_args(BUCKET_NAME, key)  
         scriptData = '\n'.join(generate_uploadify_scriptData(s3_post_args))
+        
+        additional_scriptData = 'additional_scriptData = ['
+        for i in xrange(5):
+            new_key = uuid4().hex
+            s3_post_args = s3_post.get_post_args(BUCKET_NAME, new_key)
+            additional_scriptData += '\n'.join(generate_uploadify_scriptData(s3_post_args))
+            additional_scriptData += ',\n'
+        additional_scriptData += '];'
 
         success_action_redirect=urlunparse((
                 'http',
@@ -51,6 +59,7 @@ class MyHandler(BaseHTTPRequestHandler):
         # generate the javascript for uploadify
         uploadify_script = UPLOADIFY_SCRIPT_TEMPLATE.safe_substitute(dict( 
             scriptData=scriptData, action=s3_post_args['action'],
+            additional_scriptData=additional_scriptData,
             success_action_redirect=success_action_redirect))
 
         # assemble the dictionary for template interpolation

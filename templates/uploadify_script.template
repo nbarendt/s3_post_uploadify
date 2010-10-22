@@ -1,11 +1,16 @@
 $(document).ready(function() { 
+
+    $additional_scriptData
+
     $("#fileInput1").uploadify({ 
         'uploader' : 'uploadify.swf', 
         'cancelImg' : 'cancel.png', 
-        'multi' : false, 
+        'multi' : true, 
         'scriptData': $scriptData,  
         'script': '$action', 
         'fileDataName' : 'file', 
+        'sizeLimit' : 5368709120,
+        'simUploadLimit': 1,
         'onError' : function(event, queueID, fileObj, errorObj) { 
                 if(errorObj.type == 'HTTP' 
                     && errorObj.info == 201) { 
@@ -18,11 +23,15 @@ $(document).ready(function() {
                         "  Msg: " + errorObj.info)} 
                 ; 
             }, 
+        'onOpen' : function(event, queueID, fileObj) {
+               console.log('onOpen: '  + fileObj.name);
+                $("#fileInput1").uploadifySettings("scriptData",
+                    additional_scriptData[0]);
+                additional_scriptData = additional_scriptData.slice(1);
+            },
         'onComplete' : function(event, queueID, fileObj, 
                     response, data){ 
-                console.log('Complete!');
-                window.location.href="$success_action_redirect";
-                return false;
+                console.log('onComplete: ' + fileObj.name);
             }, 
         }); 
 });
