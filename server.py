@@ -10,7 +10,7 @@ import os
 from string import Template
 
 FORM_TEMPLATE = Template(open('templates/root.template', 'rb').read())
-UPLOAD_COMPLETE_TEMPLATE = TEMPLATE(open('templates/upload_complete.template',
+UPLOAD_COMPLETE_TEMPLATE = Template(open('templates/upload_complete.template',
     'rb').read())
 UPLOADIFY_SCRIPT_TEMPLATE = Template(open('templates/uploadify_script.template',
     'rb').read())
@@ -52,8 +52,16 @@ class MyHandler(BaseHTTPRequestHandler):
                 policy = field['value']
         scriptData += '}\n'
 
+        success_action_redirect=urlunparse((
+                'http',
+                '{0}:{1}'.format(
+                    self.server.server_name, self.server.server_port),
+                'upload_complete',
+                urlencode(dict(bucket=BUCKET_NAME, key=key, etag='')),
+                '',''))
         uploadify_script = UPLOADIFY_SCRIPT_TEMPLATE.safe_substitute(dict( 
-            scriptData=scriptData, action=s3_post_args['action']))
+            scriptData=scriptData, action=s3_post_args['action'],
+            success_action_redirect=success_action_redirect))
 
         # assemble the dictionary for template interpolation
         d = {

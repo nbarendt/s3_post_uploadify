@@ -21,7 +21,7 @@ $(document).ready(function() {
         'onComplete' : function(event, queueID, fileObj, 
                     response, data){ 
                 console.log('Complete!');
-                window.location.href="http://www.google.com";
+                window.location.href="$success_action_redirect";
                 return false;
             }, 
         }); 
