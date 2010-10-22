@@ -17,31 +17,28 @@ UPLOADIFY_SCRIPT_TEMPLATE = Template(open('templates/uploadify_script.template',
 
 BUCKET_NAME = 'edacloud_media_test'
 
+def generate_uploadify_scriptData(post_args):
+    # assemble the scriptData dictionary string for uploadify's use
+    scriptData = ['{']
+    for field in post_args['fields']:
+        # apparently there's some extra uri decoding going on with
+        #   uploadify/flash/javascript
+        #   so, to protect the values, we need to doubly encode them
+        #   sigh;
+        #   see for example:
+        #     http://www.uploadify.com/forum/viewtopic.php?f=7&t=1416
+        encoding_string = "encodeURIComponent(encodeURIComponent('{0}'))" 
+        encoded_value = encoding_string.format(field['value'])
+        keyValue = "'{0}' : {1},".format(field['name'], encoded_value) 
+        scriptData.append(keyValue)
+    scriptData.append('}')
+    return scriptData
+
 class MyHandler(BaseHTTPRequestHandler):
     def generate_upload_form(self):
         key = uuid4().hex
         s3_post_args = s3_post.get_post_args(BUCKET_NAME, key)  
-    
-        # assemble the scriptData dictionary string for uploadify's use
-        scriptData = ['{']
-        for field in s3_post_args['fields']:
-            # apparently there's some extra uri decoding going on with
-            #   uploadify/flash/javascript
-            #   so, to protect the values, we need to doubly encode them
-            #   sigh;
-            #   see for example:
-            #     http://www.uploadify.com/forum/viewtopic.php?f=7&t=1416
-            encoding_string = "encodeURIComponent(encodeURIComponent('{0}'))" 
-            encoded_value = encoding_string.format(field['value'])
-            keyValue = "'{0}' : {1},".format(field['name'], encoded_value) 
-            scriptData.append(keyValue)
-            if field['name'] == 'policy':
-                # save the policy value for debug
-                policy = field['value']
-            if field['name'] == 'signature':
-                # save the signature value for debug
-                signature = field['value']
-        scriptData.append('}')
+        scriptData = '\n'.join(generate_uploadify_scriptData(s3_post_args))
 
         success_action_redirect=urlunparse((
                 'http',
@@ -53,7 +50,7 @@ class MyHandler(BaseHTTPRequestHandler):
                 ''))
         # generate the javascript for uploadify
         uploadify_script = UPLOADIFY_SCRIPT_TEMPLATE.safe_substitute(dict( 
-            scriptData='\n'.join(scriptData), action=s3_post_args['action'],
+            scriptData=scriptData, action=s3_post_args['action'],
             success_action_redirect=success_action_redirect))
 
         # assemble the dictionary for template interpolation
@@ -62,9 +59,7 @@ class MyHandler(BaseHTTPRequestHandler):
             'port' : self.server.server_port,
             'action' : s3_post_args['action'],
             'key' : key,
-            'policy' : b64decode(policy), # for debug
             'script' : uploadify_script, 
-            'signature' : signature,
         }
         self.wfile.write(FORM_TEMPLATE.safe_substitute(d))
         return

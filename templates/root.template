@@ -13,12 +13,6 @@
     <p>
         Key: $key
     </p>
-    <p>
-        Decoded Policy: $policy
-    </p>
-    <p>
-        Signature = "$signature"
-    </p>
     <form action="{action}" method="post" enctype="multipart/form-data">
         <br/>
         <!-- file must be last field -->
