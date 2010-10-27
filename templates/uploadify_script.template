@@ -1,12 +1,13 @@
 $(document).ready(function() { 
 
-    $additional_scriptData
+    $scriptData
+    
+    uploaded_keys=[];
 
     $("#fileInput1").uploadify({ 
         'uploader' : 'uploadify.swf', 
         'cancelImg' : 'cancel.png', 
         'multi' : true, 
-        'scriptData': $scriptData,  
         'script': '$action', 
         'fileDataName' : 'file', 
         'sizeLimit' : 5368709120,
@@ -24,15 +25,32 @@ $(document).ready(function() {
                 ; 
             }, 
         'onOpen' : function(event, queueID, fileObj) {
-               console.log('onOpen: '  + fileObj.name);
+                console.log("Loading New S3 Params");
                 $("#fileInput1").uploadifySettings("scriptData",
-                    additional_scriptData[0]);
-                additional_scriptData = additional_scriptData.slice(1);
+                    scriptData[0], true);
+                scriptData = scriptData.slice(1);
+                console.log("  New Key: " + $("#fileInput1"
+                    ).uploadifySettings("scriptData").key);
             },
-        'onComplete' : function(event, queueID, fileObj, 
-                    response, data){ 
-                console.log('onComplete: ' + fileObj.name);
-            }, 
+        'onComplete' : function(event, queueID, fileObj) {
+               console.log('onComplete: '  + fileObj.name);
+               current_params = $("#fileInput1"
+                    ).uploadifySettings("scriptData");
+               console.log("  Current Key: " + current_params.key);
+               uploaded_keys[uploaded_keys.length] = current_params.key;
+               return true;
+            },
+        'onAllComplete' : function(event, data) {
+            console.log('onAllCopmlete');
+            query_string="";
+            for(i=0; i<(uploaded_keys.length - 1); i++) {
+                query_string += "key=" + encodeURIComponent(uploaded_keys[i]) + "&";
+            } 
+            query_string += "key=" + encodeURIComponent(uploaded_keys[uploaded_keys.length-1]);
+            href = "$success_action_redirect" + "?" + query_string;
+            console.log('href = ' + href); 
+            window.location.href=href;
+            },
         }); 
 });
 

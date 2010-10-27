@@ -3,7 +3,7 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 </head>
 <body>
-    Successfully uploaded Key "$key" <br/> to Bucket "$bucket" <br/> (etag = $etag)!
+    Successfully uploaded Keys: <br/> $key <br/> 
 </body>
 </html>
 

@@ -21,13 +21,8 @@ def generate_uploadify_scriptData(post_args):
     # assemble the scriptData dictionary string for uploadify's use
     scriptData = ['{']
     for field in post_args['fields']:
-        # apparently there's some extra uri decoding going on with
-        #   uploadify/flash/javascript
-        #   so, to protect the values, we need to doubly encode them
-        #   sigh;
-        #   see for example:
-        #     http://www.uploadify.com/forum/viewtopic.php?f=7&t=1416
-        encoding_string = "encodeURIComponent(encodeURIComponent('{0}'))" 
+        # encode elements 
+        encoding_string = "encodeURIComponent('{0}')" 
         encoded_value = encoding_string.format(field['value'])
         keyValue = "'{0}' : {1},".format(field['name'], encoded_value) 
         scriptData.append(keyValue)
@@ -36,17 +31,14 @@ def generate_uploadify_scriptData(post_args):
 
 class MyHandler(BaseHTTPRequestHandler):
     def generate_upload_form(self):
-        key = uuid4().hex
-        s3_post_args = s3_post.get_post_args(BUCKET_NAME, key)  
-        scriptData = '\n'.join(generate_uploadify_scriptData(s3_post_args))
-        
-        additional_scriptData = 'additional_scriptData = ['
-        for i in xrange(5):
+        scriptData = 'scriptData = ['
+        for i in xrange(50):
             new_key = uuid4().hex
             s3_post_args = s3_post.get_post_args(BUCKET_NAME, new_key)
-            additional_scriptData += '\n'.join(generate_uploadify_scriptData(s3_post_args))
-            additional_scriptData += ',\n'
-        additional_scriptData += '];'
+            scriptData += '\n'.join(
+                generate_uploadify_scriptData(s3_post_args))
+            scriptData += ',\n'
+        scriptData += '];'
 
         success_action_redirect=urlunparse((
                 'http',
@@ -54,12 +46,11 @@ class MyHandler(BaseHTTPRequestHandler):
                     self.server.server_name, self.server.server_port),
                 'upload_complete',
                 '',
-                urlencode(dict(bucket=BUCKET_NAME, key=key, etag='')),
+                '', 
                 ''))
         # generate the javascript for uploadify
         uploadify_script = UPLOADIFY_SCRIPT_TEMPLATE.safe_substitute(dict( 
             scriptData=scriptData, action=s3_post_args['action'],
-            additional_scriptData=additional_scriptData,
             success_action_redirect=success_action_redirect))
 
         # assemble the dictionary for template interpolation
@@ -67,7 +58,6 @@ class MyHandler(BaseHTTPRequestHandler):
             'hostname': self.server.server_name,
             'port' : self.server.server_port,
             'action' : s3_post_args['action'],
-            'key' : key,
             'script' : uploadify_script, 
         }
         self.wfile.write(FORM_TEMPLATE.safe_substitute(d))
@@ -76,8 +66,6 @@ class MyHandler(BaseHTTPRequestHandler):
     def upload_complete(self):
         parsed = urlparse(self.path)
         d = parse_qs(parsed.query)
-        for k in d:
-            d[k] = d[k][0] # take the first element of each qs list
         self.wfile.write(UPLOAD_COMPLETE_TEMPLATE.safe_substitute(d))
         return
 
