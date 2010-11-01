@@ -36,7 +36,8 @@ $(document).ready(function() {
                     ).uploadifySettings("scriptData");
                console.log("  Current Key: " + current_params.key);
                $.ajax({
-                    url : "$key_uploaded?key=" + encodeURIComponent(current_params.key),
+                    url : "$key_uploaded?key=" + encodeURIComponent(
+                            current_params.key),
                     type : 'POST',
                     timeout : 5000,
                     success : function(data) {
