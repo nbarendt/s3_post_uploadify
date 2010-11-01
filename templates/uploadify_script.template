@@ -2,8 +2,6 @@ $(document).ready(function() {
 
     $scriptData
     
-    uploaded_keys=[];
-
     $("#fileInput1").uploadify({ 
         'uploader' : 'uploadify.swf', 
         'cancelImg' : 'cancel.png', 
@@ -37,17 +35,23 @@ $(document).ready(function() {
                current_params = $("#fileInput1"
                     ).uploadifySettings("scriptData");
                console.log("  Current Key: " + current_params.key);
-               uploaded_keys[uploaded_keys.length] = current_params.key;
+               $.ajax({
+                    url : "$key_uploaded?key=" + encodeURIComponent(current_params.key),
+                    type : 'POST',
+                    timeout : 5000,
+                    success : function(data) {
+                        console.log('Server notified about upload of ' +
+                            current_params.key);
+                        },
+                    error : function() {
+                        alert('An error occurred with key ' + current_params.key);
+                        }
+                });
                return true;
             },
         'onAllComplete' : function(event, data) {
             console.log('onAllCopmlete');
-            query_string="";
-            for(i=0; i<(uploaded_keys.length - 1); i++) {
-                query_string += "key=" + encodeURIComponent(uploaded_keys[i]) + "&";
-            } 
-            query_string += "key=" + encodeURIComponent(uploaded_keys[uploaded_keys.length-1]);
-            href = "$success_action_redirect" + "?" + query_string;
+            href = "$success_action_redirect"
             console.log('href = ' + href); 
             window.location.href=href;
             },

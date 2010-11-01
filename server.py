@@ -17,6 +17,9 @@ UPLOADIFY_SCRIPT_TEMPLATE = Template(open('templates/uploadify_script.template',
 
 BUCKET_NAME = 'edacloud_media_test'
 
+
+g_uploaded_keys = []
+
 def generate_uploadify_scriptData(post_args):
     # assemble the scriptData dictionary string for uploadify's use
     scriptData = ['{']
@@ -51,7 +54,8 @@ class MyHandler(BaseHTTPRequestHandler):
         # generate the javascript for uploadify
         uploadify_script = UPLOADIFY_SCRIPT_TEMPLATE.safe_substitute(dict( 
             scriptData=scriptData, action=s3_post_args['action'],
-            success_action_redirect=success_action_redirect))
+            success_action_redirect=success_action_redirect,
+            key_uploaded='/key_uploaded'))
 
         # assemble the dictionary for template interpolation
         d = {
@@ -64,8 +68,7 @@ class MyHandler(BaseHTTPRequestHandler):
         return
 
     def upload_complete(self):
-        parsed = urlparse(self.path)
-        d = parse_qs(parsed.query)
+        d = dict(key=g_uploaded_keys)
         self.wfile.write(UPLOAD_COMPLETE_TEMPLATE.safe_substitute(d))
         return
 
@@ -97,11 +100,26 @@ class MyHandler(BaseHTTPRequestHandler):
         if 'upload_complete' in self.path:
             self.do_GET_upload_complete()
         elif '/' == self.path:
+            global g_uploaded_keys
+            g_uploaded_keys = []
             self.do_GET_root()
         else:
             self.do_GET_file()
+
         self.wfile.close()
         return
+
+    def do_POST(self):
+        parsed = urlparse(self.path)
+        d = parse_qs(parsed.query)
+        global g_uploaded_keys
+        g_uploaded_keys += d['key']
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write('Key %s received' % d['key'][0])
+        return
+
+       
 
 def main():
     server = HTTPServer(('', 8080), MyHandler)
