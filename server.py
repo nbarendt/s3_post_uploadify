@@ -32,7 +32,7 @@ def generate_uploadify_scriptData(post_args):
 class MyHandler(BaseHTTPRequestHandler):
     def generate_upload_form(self):
         scriptData = 'scriptData = ['
-        for i in xrange(50):
+        for i in xrange(500):
             new_key = uuid4().hex
             s3_post_args = s3_post.get_post_args(BUCKET_NAME, new_key)
             scriptData += '\n'.join(

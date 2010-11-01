@@ -11,7 +11,7 @@ $(document).ready(function() {
         'script': '$action', 
         'fileDataName' : 'file', 
         'sizeLimit' : 5368709120,
-        'simUploadLimit': 1,
+        'simUploadLimit': 200,
         'onError' : function(event, queueID, fileObj, errorObj) { 
                 if(errorObj.type == 'HTTP' 
                     && errorObj.info == 201) { 
