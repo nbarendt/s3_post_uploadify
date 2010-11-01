@@ -6,7 +6,7 @@ from urlparse import urlparse, parse_qs, urlunparse
 from urllib import urlencode
 import os
 from string import Template
-import s3_post
+from s3_post import S3PostArgGenerator
 import mimetypes
 
 FORM_TEMPLATE = Template(open('templates/root.template', 'rb').read())
@@ -35,9 +35,10 @@ def generate_uploadify_scriptData(post_args):
 class MyHandler(BaseHTTPRequestHandler):
     def generate_upload_form(self):
         scriptData = 'scriptData = ['
+        s3_arg_generator = S3PostArgGenerator()
         for i in xrange(50):
             new_key = uuid4().hex
-            s3_post_args = s3_post.get_post_args(BUCKET_NAME, new_key)
+            s3_post_args = s3_arg_generator.get_post_args(BUCKET_NAME, new_key)
             scriptData += '\n'.join(
                 generate_uploadify_scriptData(s3_post_args))
             scriptData += ',\n'
